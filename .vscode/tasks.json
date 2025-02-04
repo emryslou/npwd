@@ -1,0 +1,22 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Initialize Terminal",
+            "type": "shell",
+            "command": "conda activate watch-dog", // 替换为你的初始化命令
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always", // 总是打开终端
+                "panel": "dedicated", // 使用专用终端面板
+                "focus": true // 聚焦到终端
+            }
+        }
+    ]
+}

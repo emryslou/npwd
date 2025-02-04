@@ -1,0 +1,13 @@
+{
+    "python.envFile": "${workspaceFolder}/.vscode/.env",
+    "terminal.integrated.profiles.windows": {
+        "my-pwsh": {
+            "source": "PowerShell",
+            "args": [
+                "-NoExit",
+                "conda activate watch-dog"
+            ]
+        }
+    },
+    "terminal.integrated.defaultProfile.windows": "my-pwsh"
+}
