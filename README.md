@@ -6,4 +6,4 @@ bin # chrome driver bin path
 src # python srouce code
 vendor # custom net page handlers
 
-# changelog.txt
+# 关于changelog 说明
