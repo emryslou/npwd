@@ -12,6 +12,7 @@ setup(
         'selenium==4.24',
         'watchdog==6.0.0',
         'markdown2==2.5.3',
+        'Windows-Toasts==1.3.0',
     ],
     package_dir={"": "src"},
     packages=find_namespace_packages(
