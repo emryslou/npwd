@@ -2,16 +2,20 @@ from queue import Queue
 from typing import Any, Dict, Tuple, Callable
 from threading import Event
 from time import time
+import uuid
 
 class ManageQueue(object):
     def __init__(self, *args: Tuple[str], **kwargs: Dict[str, int]):
         self.__start_time = time()
-        self.__checkpoint_time = self.__start_time
+        self.__checkpoint_time = {
+            arg: self.__start_time for arg in args
+        }
         self.__queue_event = Event()
         self.__queues: Dict[str, Queue] = {
             arg: Queue(maxsize=int(kwargs.get(arg, 0)))
             for arg in args
         }
+        self.__uuid_cache = None
 
     def put(self, queue_name: str, item: Any, block: bool = True, timeout: float | None = None):
         try:
@@ -60,12 +64,17 @@ class ManageQueue(object):
         return not self.__queue_event.is_set()
     
     def idle(self, timeout: float = 15) -> bool:
-        return time() - self.__checkpoint_time >= timeout
+        return time() - max([_t for _q, _t in self.__checkpoint_time.items() if _q != 
+        'progress']) > timeout
     
     def update_checkpoint(self, queue_name: str):
-        if queue_name != 'progress':
-            self.__checkpoint_time = time()
+        self.__checkpoint_time[queue_name] = time()
     
     @property
     def start_time(self):
         return self.__start_time
+    
+    def uuid(self, flush_cache: bool = False) -> str:
+        if flush_cache or self.__uuid_cache is None:
+            self.__uuid_cache = str(uuid.uuid5(uuid.NAMESPACE_DNS, 'tinystone.com'))
+        return self.__uuid_cache

@@ -1,4 +1,4 @@
-from typing import Optional, Union, List, Callable
+from typing import Optional, Union, List, Callable, Any
 from pathlib import Path
 from functools import lru_cache
 import sys
@@ -134,6 +134,7 @@ class ProgressMetaType(Enum):
     LINE = pow(2, 1)
     INFO = pow(2, 2)
     LOG = pow(2, 3)
+    IDLE = pow(2, 4)
 
 class ProgressMetaTotal(IntEnum):
     File = 3
@@ -157,9 +158,10 @@ class ProgressMetaLineStatus(Enum):
 def create_progress_meta(
         meta_type: ProgressMetaType,
         data: str = None, parent: str = None,
-        total: int|None = None,
+        total: int | None = None,
         status: str | ProgressMetaLineStatus | ProgressMetaFileStatus | None = None,
-        message: str | None = None
+        message: str | None = None,
+        result: Any = None
     ) -> dict:
     return {
         'type': meta_type.value,
@@ -168,6 +170,7 @@ def create_progress_meta(
         'total': total,
         'status': str(status) or '',
         'message': message,
+        'result': result,
     }
 
 def send_progress_meta(q, **kwargs):
@@ -179,7 +182,8 @@ def send_progress_meta(q, **kwargs):
             'type': ProgressMetaType.INFO.value,
             'message': message
         }))
-        
+
+    # result = kwargs.get('result', None)
     q.put_nowait('progress', json.dumps(create_progress_meta(**kwargs)))
 
 def send_progress_msg(q, message: str):

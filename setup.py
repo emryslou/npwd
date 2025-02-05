@@ -2,7 +2,7 @@ from setuptools import setup, find_namespace_packages
 
 setup(
     name='npwd', # net-page-watch-dog
-    version='0.0.3',
+    version='0.0.4',
     install_requires = [
         'importlib-metadata; python_version >= "3.10.16"',
         'loguru==0.7',
@@ -11,6 +11,7 @@ setup(
         'click==8.1',
         'selenium==4.24',
         'watchdog==6.0.0',
+        'markdown2==2.5.3',
     ],
     package_dir={"": "src"},
     packages=find_namespace_packages(

@@ -13,11 +13,13 @@ class EastMoney(Handler):
         # WebDriverWait(self.driver, timeout=10)
         # self.driver.execute_script('tk_tg_zoomin()')
         js = """
-            document.querySelectorAll('div').forEach(e => {
-                if (e.style.zIndex >= 100) {
-                    e.style.display = 'none';
-                }
-            });
+            setTimeout(() => {
+                document.querySelectorAll('div').forEach(e => {
+                    if (e.style.zIndex >= 100) {
+                        e.style.display = 'none';
+                    }
+                });
+            }, 1000);
         """
         self.driver.execute_script(js)
         super().handler()

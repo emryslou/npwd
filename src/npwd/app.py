@@ -13,16 +13,16 @@ from selenium.webdriver.common.proxy import Proxy, ProxyType
 
 from .core import UrlSourceEventHandler, UrlInfo, config, dispatch_handler, ManageQueue
 from .utils import (
-    func_name, chrome_bin, hook_log, 
+    func_name, chrome_bin, hook_log, platform,
     handle_exception,
     send_progress_meta, send_progress_msg,
-    progress_total, seconds_readable,
+    progress_total, seconds_readable, txt_path, data_path,
     ProgressMetaType as PMT,
     ProgressMetaFileStatus as PMFS,
     ProgressMetaLineStatus as PMLS,
 )
 
-__version__ = 'v3.2025.02.01'
+__version__ = 'v0.0.4.2025.02.05'
 
 def init_browser() -> webdriver.Chrome:
     """ 初始化一个 浏览器对象 """
@@ -78,7 +78,7 @@ def capture_worker(mq: ManageQueue, driver: webdriver.Chrome, url: UrlInfo, win:
             send_progress_meta(
                 mq,
                 meta_type=PMT.LINE, data=f'{url.source}:{url.src_idx}', parent=url.source, status=PMLS.Succeed,
-                message = f'{url.source}:{url.src_idx}: result: {result}'
+                result=result,
             )
             finally_message = False
         return (win, None)
@@ -233,6 +233,34 @@ def path_monitor(mq: ManageQueue, path: str):
         obsrv.stop()
         obsrv.join()
 
+def system_toast(file_path: str | Path):
+    import os
+    sys_type = platform()
+    match sys_type:
+        case 'Windows':
+            from windows_toasts import Toast, WindowsToaster
+            toaster = WindowsToaster('Python')
+            newToast = Toast()
+            newToast.text_fields = ['注意啦', f'结果保存在 {file_path.name}，点击弹窗，可查看结果']
+            newToast.on_activated = lambda _: os.startfile(file_path)
+            toaster.show_toast(newToast)
+        case _:
+            print(f'暂不支持 {sys_type} ')
+
+def clear_data_expired(mq: ManageQueue, data: str | Path):
+    data = data if isinstance(data, Path) else Path(data)
+    # print('clear_data_expired:', data, 'created:', time.strftime('%Y%m%d%H%M%S', time.gmtime(data.stat().st_ctime)), 'now:', time.strftime('%Y%m%d%H%M%S'))
+    if data.is_file() and time.time() - data.stat().st_ctime > float(config.get('data_expire_seconds', 86400)):
+        send_progress_msg(mq, message=f'文件 {data} 已过期，需删除')
+        data.unlink()
+    
+    if data.is_dir():
+        for path in data.iterdir():
+            if not mq.running():
+                break
+            if path.is_file() or path.is_dir():
+                clear_data_expired(mq, data=path)
+
 def show_progress(mq: ManageQueue):
     """ 显示任务处理情况 """
     from rich.progress import Progress
@@ -255,44 +283,101 @@ def show_progress(mq: ManageQueue):
                 'total': total,
             }
         
+        def hanle_results(*args, **kwargs):
+            import markdown2 as markdown
+            results = kwargs.get('results', None)
+            if not results:
+                return
+            md_text = """# 数据汇总\n"""
+            md_lines = [md_text]
+            for r in results:
+                md_lines.append(f'## {r["name"]} \n ![{r["name"]}](file:///{r["path"]} "{r"name"}")')
+            
+            md_text = '\n'.join(md_lines)
+            
+            save_file = 'html_{}.html'.format(time.strftime('%Y%m%d%H%M%S'))
+            file_path = txt_path().joinpath(save_file)
+
+            if not file_path.parent.exists():
+                file_path.parent.mkdir(parents=True)
+            
+            html = markdown.markdown(text=md_text)
+            with open(file_path, mode='w') as f:
+                f.write(html)
+            
+            system_toast(file_path)
+            if not mq.running():
+                print('Info: Result: {}'.format(save_file))
+            else:
+                send_progress_msg(mq, message=f'Result save to {save_file}')
+            
+
+        def idle_callback(*args, **kwargs):
+            def idle_timeout(*_args, **_kwargs):
+                mq.update_checkpoint('file')
+                path = config.get('source', '')
+                send_progress_msg(mq, message=f'定时任务: 发送 {path} 中的文件')
+                send_files_from_path(mq, path)
+            
+            hanle_results(*args, **kwargs)
+            idle_timeout(*args, **kwargs)
+        
+        results = []
+        t: dict = None
         while mq.running():
             try:
                 t = json.loads(mq.get('progress', timeout=1))
-                match PMT(t['type']):
-                    case PMT.FILE:
-                        if t['data'] not in tasks.keys():
-                            tasks[t['data']] = new_task(name=t['data'], total=t['total'], color='blue')
+                try:
+                    match PMT(t['type']):
+                        case PMT.FILE:
+                            if t['data'] not in tasks.keys():
+                                tasks[t['data']] = new_task(name=t['data'], total=t['total'], color='blue')
+                            else:
+                                update_task(t['data'])
+                        case PMT.LINE:
+                            if t['data'] not in tasks[t['parent']]['sub_task'].keys():
+                                tasks[t['parent']]['sub_task'][t['data']] = new_task(name=t['data'], total=t['total'], color='green')
+                            else:
+                                progress.update(tasks[t['parent']]['sub_task'][t['data']]['task'], advance=1)
+                                tasks[t['parent']]['sub_task'][t['data']]['total'] -= 1
+                                update_task(t['parent'])
+                        case PMT.INFO:
+                            progress.console.log(f'Info: {t["message"]}')
+                        case PMT.IDLE:
+                            data = results[:]
+                            results.clear()
+                            idle_callback(results=data)
+                        case _:
+                            progress.console.log(f'Unknown: {t["type"]} {t}')
+                    
+                    task_results = t.get('result', None)
+                    if task_results:
+                        if isinstance(task_results, List):
+                            results.extend(task_results)
                         else:
-                            update_task(t['data'])
-                    case PMT.LINE:
-                        if t['data'] not in tasks[t['parent']]['sub_task'].keys():
-                            tasks[t['parent']]['sub_task'][t['data']] = new_task(name=t['data'], total=t['total'], color='green')
-                        else:
-                            progress.update(tasks[t['parent']]['sub_task'][t['data']]['task'], advance=1)
-                            tasks[t['parent']]['sub_task'][t['data']]['total'] -= 1
-                            update_task(t['parent'])
-                    case PMT.INFO:
-                        progress.console.log(f'Info: {t["message"]}')
-                    case _:
-                        progress.console.log(f'Unknown: {t["type"]} {t}')
+                            results.append(task_results)
+                except BaseException as e:
+                    progress.console.log(f'Progress Error: {e}')
+                
                 mq.task_done('progress')
             except Empty:
                 continue
+        
+        hanle_results(results=results)
 
 
-def idle_timeout_task(mq: ManageQueue):
+def idle_timeout_ticker(mq: ManageQueue):
     interval = config.get('idle_timeout', 600)
     def create_timer(delay: float, call: Callable, *args, **kwargs):
         t = threading.Timer(delay, function=call, args=args, kwargs=kwargs)
         t.start()
 
     def ticker_callback(delay: float, mq: ManageQueue):
-        if mq.running() and mq.idle(float(interval)):
-            mq.update_checkpoint('file')
-            path = config.get('source', '')
-            send_progress_msg(mq, message=f'定时任务: 发送 {path} 中的文件')
-            send_files_from_path(mq, path)
-
+        if mq.running() and mq.idle(10):
+            clear_data_expired(mq, data=data_path())
+        if mq.running() and config.get('idle_task', False) and mq.idle(float(interval)):
+            send_progress_meta(mq, meta_type=PMT.IDLE)
+        
         if mq.running():
             create_timer(delay, ticker_callback, delay, mq=mq)
     
@@ -331,17 +416,16 @@ def start(monitor_path: str | None = None):
     
     mq = ManageQueue(*tuple(mq_kwargs.keys()), **mq_kwargs)
     threads:List[threading.Thread] = [
-        threading.Thread(name='ProcUrl', target=proc_url, args=(mq, driver)) # 处理 URL
+        threading.Thread(name='Ticker', target=idle_timeout_ticker, args=(mq,)), # ticker
+        threading.Thread(name='ProcUrl', target=proc_url, args=(mq, driver)), # 处理 URL
     ]
 
     if with_progress:
         new_threads = [threading.Thread(name='Progress', target=show_progress, args=(mq,))]
         new_threads.extend(threads)
-        threads[:] = new_threads[:]
+        threads = new_threads[:]
 
     if Path(monitor_path).is_dir(): # 监控源 为目录时 启动 目录监控 和 目录下文件排队
-        if config.get('idle_task', False):
-            threads.append(threading.Thread(name='Ticker', target=idle_timeout_task, args=(mq,)),)
         if config.get('source_watch', False): # 监控目录
             threads.append(threading.Thread(name='PathMonitor', target=path_monitor, args=(mq, monitor_path,)))
         # 文件排队
@@ -363,7 +447,7 @@ def start(monitor_path: str | None = None):
         else:
             if with_progress:
                 meta_list = [
-                    {'total':progress_total(data=monitor_path, meta_type=PMT.FILE), 'message': f'处理文件: {monitor_path}'},
+                    {'total': progress_total(data=monitor_path, meta_type=PMT.FILE), 'message': f'处理文件: {monitor_path}', },
                     {'status': PMFS.Queued},
                     {'status': PMFS.Processed}
                 ]
@@ -381,7 +465,6 @@ def start(monitor_path: str | None = None):
                 mq, message=f'感谢使用，程序预计在 {quit_timeout} 秒内退出'
             )
     finally:
-        if with_progress:
-            mq.join('progress')
+        if with_progress: mq.join('progress')
         stop_and_wait_threads(mq, threads, quit_timeout)
         driver.quit()
