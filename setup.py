@@ -16,11 +16,11 @@ setup(
     package_dir={"": "src"},
     packages=find_namespace_packages(
         where='src',
-        include=("src/npwd*",)
+        include=['npwd*']
     ),
     entry_points={
         'console_scripts': [
-            'cli-name = cli:cli'
+            'cli-name = npwd.cli:cli'
         ],
     },
 )

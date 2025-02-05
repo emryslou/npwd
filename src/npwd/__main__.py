@@ -8,4 +8,4 @@ if not __package__:
 
 if __name__ == '__main__':
     from npwd import cli
-    cli()
+    cli.cli()

@@ -238,11 +238,12 @@ def system_toast(file_path: str | Path):
     sys_type = platform()
     match sys_type:
         case 'Windows':
-            from windows_toasts import Toast, WindowsToaster
+            from windows_toasts import Toast, WindowsToaster, ToastDuration
             toaster = WindowsToaster('Python')
             newToast = Toast()
             newToast.text_fields = ['注意啦', f'结果保存在 {file_path.name}，点击弹窗，可查看结果']
             newToast.on_activated = lambda _: os.startfile(file_path)
+            newToast.duration = ToastDuration.Long
             toaster.show_toast(newToast)
         case _:
             print(f'暂不支持 {sys_type} ')
@@ -381,7 +382,8 @@ def idle_timeout_ticker(mq: ManageQueue):
         if mq.running():
             create_timer(delay, ticker_callback, delay, mq=mq)
     
-    send_progress_msg(mq, '空闲超时任务启动: {} ....'.format(seconds_readable(interval)))
+    if config.get('source_watch', False):
+        send_progress_msg(mq, '空闲超时任务启动: {} ....'.format(seconds_readable(interval)))
     ticker_callback(1, mq)
 
 def send_files_from_path(mq: ManageQueue, path: str):
@@ -436,7 +438,8 @@ def start(monitor_path: str | None = None):
     try:
         if Path(monitor_path).is_dir():
             # 处理已经存在文件
-            send_files_from_path(mq, monitor_path)
+            if config.get('source_watch', False):
+                send_files_from_path(mq, monitor_path)
             if config.get('source_watch', False):
                 if with_progress:
                     send_progress_msg(mq, message=f'监控目录: {monitor_path}')
@@ -457,7 +460,8 @@ def start(monitor_path: str | None = None):
                     )
             push_url_proc_queue(mq, monitor_path)
             mq.join('url')
-        send_progress_msg(mq, message=f'{monitor_path} 内容全部处理完成')
+        if config.get('source_watch', False):
+            send_progress_msg(mq, message=f'{monitor_path} 内容全部处理完成')
     except KeyboardInterrupt:
         logger.info('感谢使用，程序预计在 {} 秒内退出', quit_timeout)
         if with_progress:

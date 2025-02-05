@@ -1,7 +1,7 @@
 from typing import Optional, Union, List, Callable, Any
 from pathlib import Path
 from functools import lru_cache
-import sys
+import sys, os
 from loguru import logger
 from enum import Enum, IntEnum
 
@@ -10,7 +10,7 @@ def func_name(depth: int = 1):
 
 @lru_cache(maxsize=512)
 def root_path() -> Path:
-    return Path(__file__).parent.parent.parent.parent
+    return Path(os.getcwd())
 
 def data_path() -> Path:
     return root_path().joinpath('data')
