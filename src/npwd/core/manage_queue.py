@@ -2,7 +2,7 @@ from queue import Queue
 from typing import Any, Dict, Tuple, Callable
 from threading import Event
 from time import time
-import uuid
+import uuid, json
 
 class ManageQueue(object):
     def __init__(self, *args: Tuple[str], **kwargs: Dict[str, int]):
@@ -19,7 +19,7 @@ class ManageQueue(object):
 
     def put(self, queue_name: str, item: Any, block: bool = True, timeout: float | None = None):
         try:
-            self.__queues[queue_name].put(item=item, block=block, timeout=timeout)
+            self.__queues[queue_name].put(item=json.dumps(item), block=block, timeout=timeout)
         finally:
             self.update_checkpoint(queue_name)
 
@@ -30,7 +30,7 @@ class ManageQueue(object):
             self.update_checkpoint(queue_name)
     
     def get(self, queue_name: str, block: bool = True, timeout: float | None = None) -> Any:
-        return self.__queues[queue_name].get(block=block, timeout=timeout)
+        return json.loads(s=self.__queues[queue_name].get(block=block, timeout=timeout))
     
     def get_nowait(self, queue_name: str) -> Any:
         return self.get(queue_name, block=False)
@@ -64,8 +64,10 @@ class ManageQueue(object):
         return not self.__queue_event.is_set()
     
     def idle(self, timeout: float = 15) -> bool:
-        return time() - max([_t for _q, _t in self.__checkpoint_time.items() if _q != 
-        'progress']) > timeout
+        return time() - max([
+                _t for _q, _t in self.__checkpoint_time.items()
+                if _q != 'progress'
+            ]) > timeout
     
     def update_checkpoint(self, queue_name: str):
         self.__checkpoint_time[queue_name] = time()

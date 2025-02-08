@@ -5,7 +5,7 @@ import warnings
 from ..utils import func_name
 
 class UrlInfo(object):
-    __slots__ = ('url', 'handler', 'name', 'blocks', 'snap_full_page', 'source', 'src_idx', 'task_id')
+    __slots__ = ('url', 'handler', 'name', 'blocks', 'snap_full_page', 'source', 'src_idx', 'batch_id')
 
     def __init__(self, **kwargs):
         """

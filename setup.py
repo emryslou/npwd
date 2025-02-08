@@ -13,6 +13,7 @@ setup(
         'watchdog==6.0.0',
         'markdown2==2.5.3',
         'Windows-Toasts==1.3.0',
+        'requests==2.32.3',
     ],
     package_dir={"": "src"},
     packages=find_namespace_packages(

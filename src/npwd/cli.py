@@ -1,3 +1,4 @@
+import http.client
 import click
 from loguru import logger
 
@@ -6,18 +7,13 @@ def cli():
     pass
 
 @cli.command()
-def clear_data():
+@click.option('--expire', type=click.IntRange(3600, 864000), default=86400, help='过期时间: 距离创建时间过了多少, 单位 秒，')
+def clear_data(expire: int = 86400):
     """ 清除之前的数据 """
     from . import utils as tools
-    import shutil
-    logger.info('清除目录 {}', tools.data_path())
-    for item in tools.data_path().iterdir():
-        logger.info('清除子目录 {} ...', item)
-        if item.is_file():
-            item.unlink()
-        elif item.is_dir():
-            shutil.rmtree(item)
-    logger.info('清除目录 {} 的数据完成 -_-', tools.data_path())
+    tools.remove_expired_files(expire, tools.data_path())
+
+
 
 @cli.command()
 @click.option('--source', type=click.Path(exists=True), default=None, help='需要处理文件或者目录', required=True)
@@ -33,9 +29,6 @@ def clear_data():
 @click.option('--log-level', type=click.Choice(['TRACE', 'DEBUG', 'INFO', 'SUCCESS', 'WARNING', 'ERROR', 'CRITICAL'], case_sensitive=False), default='INFO', help='日志显示级别, 默认: INFO')
 def run(**kwargs):
     """ 爬取指定目录或文件的 url
-    Params:
-        source: str 需要爬取的文件或目录
-        source-watch: 只有对 
     """
     from .core import config
     from .utils import load_handlers, log_path
@@ -59,6 +52,49 @@ def version():
     from . import app
     print('版本号 app: ', app.__version__)
 
-        
+
+@cli.command()
+@click.option('--runtime-path', type=click.Path(exists=True), default=None, help='需要初始化的路径, 默认: None')
+def runtime_init(runtime_path: str | None = None):
+    from pathlib import Path
+    from .utils import data_path, bin_path, log_path, platform
+
+    def bin_path_init():
+        import requests, json
+        from urllib3.util import parse_url
+        chrome_driver_src = 'https://googlechromelabs.github.io/chrome-for-testing/known-good-versions-with-downloads.json'
+        r = requests.get(url=chrome_driver_src)
+        if r.status_code != 200:
+            return
+        all_dl_info:dict = json.loads(r.content)
+        run_pf = platform()
+        if run_pf.lower().startswith('win'):
+            downloads_info = []
+            for dl in all_dl_info['versions']:
+                if not dl['version'].startswith('132'):
+                    continue
+                downloads_info.extend([
+                    {'version': dl['version'], 'url': dl_url['url']} for dl_url in dl['downloads']['chrome']
+                    if dl_url['platform'] == 'win64'
+                ])
+        else:
+            downloads_info = []
+
+        r = requests.get(url=downloads_info[-1]['url'], stream=True)
+        if r.status_code == 200:
+            print('dl .... ')
+            with open(bin_path().joinpath('dl.zip'), 'wb') as f:
+                f.write(r.content)
+            print('dl done')
+
+    for path_func in [data_path, bin_path, log_path]:
+        path: Path = path_func()
+        if path.exists():
+            continue
+        path.mkdir(parents=True)
+    
+    bin_path_init()
+
+
 if __name__ == '__main__':
     cli()

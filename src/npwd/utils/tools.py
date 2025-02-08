@@ -9,8 +9,9 @@ def func_name(depth: int = 1):
     return sys._getframe(depth).f_code.co_name
 
 @lru_cache(maxsize=512)
-def root_path() -> Path:
-    return Path(os.getcwd())
+def root_path(custom_root_path: str | None = None) -> Path:
+    custom_root_path = custom_root_path if custom_root_path else os.getcwd()
+    return Path(custom_root_path)
 
 def data_path() -> Path:
     return root_path().joinpath('data')
@@ -105,7 +106,7 @@ def platform():
         if sys.platform.startswith(key):
             return sys_type
     
-    return 'Unknown System'
+    return 'Unknown Platform'
 
 def handle_exception(func: Callable) -> Callable:
     def wrapper(*args, **kwargs):
@@ -125,82 +126,6 @@ def hook_log(func: Callable) -> Callable:
     
     return wrapper
 
-def count_lines_of_file(file: str) -> int:
-    with open(file, encoding='utf-8') as f:
-        return len(f.readlines())
-
-class ProgressMetaType(Enum):
-    FILE = pow(2, 0)
-    LINE = pow(2, 1)
-    INFO = pow(2, 2)
-    LOG = pow(2, 3)
-    IDLE = pow(2, 4)
-
-class ProgressMetaTotal(IntEnum):
-    File = 3
-    Line = 3
-
-class ProgressMetaFileStatus(Enum):
-    Recived = 0
-    Queued = 1
-    Processed = 2
-    Succeed = 3
-    Failure = 3
-
-class ProgressMetaLineStatus(Enum):
-    Created = 0
-    Queued = 1
-    Processed = 2
-    Succeed = 3
-    Failure = 3
-
-
-def create_progress_meta(
-        meta_type: ProgressMetaType,
-        data: str = None, parent: str = None,
-        total: int | None = None,
-        status: str | ProgressMetaLineStatus | ProgressMetaFileStatus | None = None,
-        message: str | None = None,
-        result: Any = None
-    ) -> dict:
-    return {
-        'type': meta_type.value,
-        'data': data,
-        'parent': parent or '',
-        'total': total,
-        'status': str(status) or '',
-        'message': message,
-        'result': result,
-    }
-
-def send_progress_meta(q, **kwargs):
-    import json
-    message = kwargs.get('message', None)
-    if kwargs['meta_type'] != ProgressMetaType.INFO and message:
-        del kwargs['message']
-        q.put_nowait('progress', json.dumps({
-            'type': ProgressMetaType.INFO.value,
-            'message': message
-        }))
-
-    # result = kwargs.get('result', None)
-    q.put_nowait('progress', json.dumps(create_progress_meta(**kwargs)))
-
-def send_progress_msg(q, message: str):
-    send_progress_meta(
-        q, meta_type=ProgressMetaType.INFO, message=message
-    )
-
-def progress_total(data: str, meta_type: ProgressMetaType) -> int:
-    match meta_type:
-        case ProgressMetaType.FILE:
-            # ProgressMetaTotal.FILE + file_line_count * ProgressMetaTotal.LINE - 1
-            return 3 + count_lines_of_file(data) * 3 - 1
-        case ProgressMetaType.LINE:
-            return 3 # ProgressMetaTotal.LINE
-        case _:
-            return 0
-
 def seconds_readable(seconds: int | float) -> str:
     units: dict = {
         '天': 86400, '小时': 3600,
@@ -214,3 +139,18 @@ def seconds_readable(seconds: int | float) -> str:
             ret = '{} {} {}'.format(ret, int(seconds / unit_size), unit_name)
             seconds = seconds % unit_size
     return ret
+
+
+def remove_expired_files(expired: int, file_or_dir: Path):
+    if not file_or_dir.exists():
+        return
+    
+    import time
+    now = time.time()
+    for data_path in file_or_dir.iterdir():
+        if data_path.is_dir():
+            remove_expired_files(expired, data_path)
+        elif data_path.is_file():
+            if now - data_path.stat().st_ctime <= expired:
+                continue
+            data_path.unlink()
