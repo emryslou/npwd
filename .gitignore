@@ -169,7 +169,13 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# .idea
+.idea
+
+# npwd
 demo
 data
 log
 catch
+http

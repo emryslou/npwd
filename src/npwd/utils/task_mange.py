@@ -1,6 +1,7 @@
 from typing import Callable, Any
 from enum import Enum, IntEnum
 
+
 class ProgressMetaType(Enum):
     FILE = pow(2, 0)
     LINE = pow(2, 1)
@@ -9,9 +10,11 @@ class ProgressMetaType(Enum):
     IDLE = pow(2, 4)
     BATCH_DONE = pow(2, 5)
 
+
 class ProgressMetaTotal(IntEnum):
     File = 3
     Line = 3
+
 
 class ProgressMetaFileStatus(Enum):
     Recived = 0
@@ -19,6 +22,7 @@ class ProgressMetaFileStatus(Enum):
     Processed = 2
     Succeed = 3
     Failure = 3
+
 
 class ProgressMetaLineStatus(Enum):
     Created = 0
@@ -36,7 +40,7 @@ def create_progress_meta(
         message: str | None = None,
         result: Any = None,
         batch_id: str | None = None
-    ) -> dict:
+) -> dict:
     return {
         'type': meta_type.value,
         'data': data,
@@ -61,7 +65,7 @@ class TaskManage(object):
             'parent': parent,
             'total': total,
         }
-    
+
     def update(self, key: str, on_done: Callable | None = None, on_err: Callable | None = None):
         update_keys = [key]
         if self.__tasks[key]['parent']:
@@ -78,12 +82,11 @@ class TaskManage(object):
                     del self.__tasks[_key]
                     if on_done: on_done(_key)
             except BaseException as be:
-                import traceback, sys
-                ev, et, tb = sys.exc_info()
-                trace = traceback.format_exception(ev, et, tb)
+                import traceback
+                trace = traceback.format_exc()
                 if on_err:
                     on_err(err=be, trace=trace, params={'task_key': _key, 'tasks': self.__tasks.copy()})
-    
+
     def find(self, key: str) -> bool:
         return key in self.__tasks.keys()
 
@@ -91,13 +94,14 @@ class TaskManage(object):
 def send_mq(mq, q: str, item: Any):
     mq.put_nowait(q, item)
 
+
 def send_progress_meta(mq, **kwargs):
     import json
     from ..core import config
-    
+
     if not config.get('with_progress', False):
         return
-    
+
     message = kwargs.get('message', None)
     if kwargs['meta_type'] != ProgressMetaType.INFO and message:
         del kwargs['message']
@@ -108,14 +112,17 @@ def send_progress_meta(mq, **kwargs):
         })
     send_mq(mq, q='progress', item=create_progress_meta(**kwargs))
 
+
 def send_progress_msg(q, message: str):
     send_progress_meta(
         q, meta_type=ProgressMetaType.INFO, message=message
     )
 
+
 def count_lines_of_file(file: str) -> int:
     with open(file, encoding='utf-8') as f:
         return len(f.readlines())
+
 
 def progress_total(data: str, meta_type: ProgressMetaType) -> int:
     match meta_type:
@@ -123,6 +130,6 @@ def progress_total(data: str, meta_type: ProgressMetaType) -> int:
             # ProgressMetaTotal.FILE + file_line_count * ProgressMetaTotal.LINE - 1
             return 3 + count_lines_of_file(data) * 3 - 1
         case ProgressMetaType.LINE:
-            return 3 # ProgressMetaTotal.LINE
+            return 3  # ProgressMetaTotal.LINE
         case _:
             return 0

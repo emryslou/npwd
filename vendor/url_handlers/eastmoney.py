@@ -1,6 +1,7 @@
 from selenium import webdriver
 from npwd.core import UrlInfo, Handler
 
+
 class EastMoney(Handler):
     name = 'east_money'
 

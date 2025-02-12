@@ -2,7 +2,8 @@ from watchdog.events import FileSystemEventHandler, FileSystemEvent
 from watchdog.events import DirMovedEvent, DirDeletedEvent, DirModifiedEvent, DirCreatedEvent
 from watchdog.events import FileMovedEvent, FileDeletedEvent, FileModifiedEvent, FileCreatedEvent, FileClosedNoWriteEvent, FileClosedEvent, FileOpenedEvent
 import warnings
-from ..utils import func_name
+from .tools import func_name
+
 
 class UrlInfo(object):
     __slots__ = ('url', 'handler', 'name', 'blocks', 'snap_full_page', 'source', 'src_idx', 'batch_id')
@@ -46,7 +47,8 @@ class UrlInfo(object):
 
 
 def event_names():
-    return [ fn.replace('on_', '') for fn in dir(FileSystemEventHandler) if fn.startswith('on_') ][1:]
+    return [fn.replace('on_', '') for fn in dir(FileSystemEventHandler) if fn.startswith('on_')][1:]
+
 
 class UrlSourceEventHandler(FileSystemEventHandler):
     """Logs all the events captured."""

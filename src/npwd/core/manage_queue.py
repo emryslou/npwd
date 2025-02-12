@@ -2,7 +2,9 @@ from queue import Queue
 from typing import Any, Dict, Tuple, Callable
 from threading import Event
 from time import time
-import uuid, json
+import uuid
+import json
+
 
 class ManageQueue(object):
     def __init__(self, *args: Tuple[str], **kwargs: Dict[str, int]):

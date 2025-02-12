@@ -2,12 +2,13 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from typing import List, Type, Optional, Any
+from typing import Type, Any
 from urllib3.util import parse_url
 import time
 
-from ..utils import *
+from .tools import *
 from .url_info import UrlInfo
+
 
 def save_postfix():
     import time
@@ -16,6 +17,7 @@ def save_postfix():
 
 class HandlerNotFound(Exception):
     pass
+
 
 class Handler(object):
     name: Optional[str] = None
@@ -33,7 +35,6 @@ class Handler(object):
         url_obj = parse_url(self.url.url)
         if hasattr(self.url, 'blocks'):
             def snap_block(name: str, selector: str):
-                #scf = self.driver.find_element(by=By.CSS_SELECTOR, value=selector)
                 scf = WebDriverWait(self.driver, 60).until(
                     EC.visibility_of_element_located((By.CSS_SELECTOR, selector))
                 )
@@ -45,11 +46,16 @@ class Handler(object):
             self.result.extend([ {"name": block['name'], 'path': str(snap_block(**block))} for block in self.url.blocks ])
         
         if hasattr(self.url, 'snap_full_page') and self.url.snap_full_page:
-            file_name = '{}_{}.{}'.format('page', url_obj.path.lstrip('/').replace('/', '_') if url_obj.path else 'index', 'png')
+            file_name = '{}_{}.{}'.format(
+                'page',
+                url_obj.path.lstrip('/').replace('/', '_') if url_obj.path else 'index',
+                'png'
+            )
             img_save_path = save_path(file_name, url_obj.hostname or 'default', postfix=save_postfix)
             self.driver.save_screenshot(img_save_path)
             self.result.append({"name": self.url.name, "path": str(img_save_path)})
-        
+
+
 class Default(Handler):
     name = 'default'
 
