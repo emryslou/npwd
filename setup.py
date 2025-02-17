@@ -14,6 +14,7 @@ setup(
         'markdown2==2.5.3',
         'Windows-Toasts==1.3.0',
         'requests==2.32.3',
+        'ollama==0.4.7',
     ],
     package_dir={"": "src"},
     packages=find_namespace_packages(

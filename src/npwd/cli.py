@@ -69,16 +69,7 @@ def runtime_init(runtime_path: str | None = None):
 
 @cli.command()
 def dev():
-    import time
-    from .core import driver, config
-    config.init(proxy='127.0.0.1:7897', headless=False)
-
-    # print(config.get('driver.chrome.path'))
-    # b = driver.init_edge()
-    # # $env:HTTP_PROXY="http://127.0.0.1:7897"; $env:HTTPS_PROXY="http://127.0.0.1:7897"
-    # b.get('http://www.google.com')
-    # time.sleep(6)
-    print(driver.DriverType['Edge'])
+    from .beta import live_progress
 
 
 if __name__ == '__main__':

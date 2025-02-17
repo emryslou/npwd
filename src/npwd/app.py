@@ -2,7 +2,7 @@ import threading
 import time
 import json
 from loguru import logger
-from typing import List, Optional, Tuple, Any, Callable, Dict, Iterable, Mapping
+from typing import List, Optional, Tuple, Any, Callable, Dict, Iterable, Mapping, Union
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEvent
 from pathlib import Path
@@ -265,7 +265,8 @@ def system_toast(mq:ManageQueue, file_path: str | Path):
             newToast = Toast()
             newToast.text_fields = ['注意啦', f'结果保存在 {file_path.name}，点击弹窗，可查看结果']
             newToast.on_activated = lambda _: os.startfile(file_path)
-            newToast.on_dismissed = lambda _: send_progress_msg(mq, f'结果保存在 file:///{file_path}，点击链接可查看内容')
+            url_file_path = (str(file_path) if isinstance(file_path, Path) else file_path).replace('\\', '/')
+            newToast.on_dismissed = lambda _: send_progress_msg(mq, f'结果保存在 file:///{url_file_path} ，点击链接可查看内容')
             newToast.duration = ToastDuration.Long
             toaster.show_toast(newToast)
         case _:
@@ -291,9 +292,12 @@ def show_progress(mq: ManageQueue):
                 return
             
             try:
-                md_lines = ["# 数据汇总\n"]
+                md_lines = [f"# 数据汇总【{time.strftime('%Y-%m-%d %H:%M')}】\n"]
+
                 for r in results:
                     md_lines.append(f'## {r["name"]} \n ![{r["name"]}](file:///{r["path"]} "--")')
+                    if 'ai_advise' in r.keys():
+                        md_lines.append(f'## AI 对 {r["name"]} 分析建议:\n {r["ai_advise"]}')
                 md_text = '\n'.join(md_lines)
                 
                 save_file = 'html_{}.html'.format(time.strftime('%Y%m%d%H%M%S'))
@@ -407,15 +411,7 @@ def idle_timeout_ticker(mq: ManageQueue):
         t.start()
 
     def ticker_callback(delay: float, mq: ManageQueue):
-        if mq.running() and mq.idle(10):
-            mq.update_checkpoint('file')
-            clear_data_expired(mq, data=data_path())
-        
-        if mq.running() and mq.idle(60):
-            mq.update_checkpoint('file')
-            send_progress_msg(mq, f'程序空闲，等待新的任务中...')
-        
-        if mq.running() and config.get('idle_task', False) and mq.idle(float(interval)):
+        if mq.running() and config.get('idle_task', False) and mq.idle(float(interval), q='url'):
             send_progress_meta(mq, meta_type=PMT.IDLE, batch_id=mq.uuid(True))
         
         if mq.running():
@@ -423,6 +419,8 @@ def idle_timeout_ticker(mq: ManageQueue):
     
     if config.get('idle_task', False):
         send_progress_msg(mq, '系统空闲任务: 空闲超过{}后执行任务'.format(seconds_readable(interval)))
+    
+    clear_data_expired(mq, data=data_path())
     ticker_callback(1, mq)
 
 

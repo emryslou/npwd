@@ -65,11 +65,14 @@ class ManageQueue(object):
     def running(self) -> bool:
         return not self.__queue_event.is_set()
     
-    def idle(self, timeout: float = 15) -> bool:
-        return time() - max([
-                _t for _q, _t in self.__checkpoint_time.items()
-                if _q != 'progress'
-            ]) > timeout
+    def idle(self, timeout: float = 15, q: str | None = None) -> bool:
+        if q:
+            return time() - self.__checkpoint_time[q] > timeout
+        else:
+            return time() - max([
+                    _t for _q, _t in self.__checkpoint_time.items()
+                    if _q != 'progress'
+                ]) > timeout
     
     def update_checkpoint(self, queue_name: str):
         self.__checkpoint_time[queue_name] = time()

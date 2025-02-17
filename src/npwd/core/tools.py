@@ -82,6 +82,7 @@ def load_handlers(handler_config: List[str]):
         if item_path.is_dir():
             if item_path.joinpath('__init__.py').exists():
                 module_name = item.replace('/', '.').replace('\\', '.')
+                print(module_name)
                 if str(item_path.parent) not in sys.path:
                     sys.path.append(str(item_path.parent))
                 importlib.import_module(module_name.split('.')[-1], str(item_path))

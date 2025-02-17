@@ -6,6 +6,7 @@ from typing import Type, Any
 from urllib3.util import parse_url
 import time
 
+from . import config
 from .tools import *
 from .url_info import UrlInfo
 
@@ -35,7 +36,7 @@ class Handler(object):
         url_obj = parse_url(self.url.url)
         if hasattr(self.url, 'blocks'):
             def snap_block(name: str, selector: str):
-                scf = WebDriverWait(self.driver, 60).until(
+                scf = WebDriverWait(self.driver, config.get('timeout', 60)).until(
                     EC.visibility_of_element_located((By.CSS_SELECTOR, selector))
                 )
                 file_name = '{}_{}.{}.{}'.format('block', url_obj.path.replace('/', '_') if url_obj.path else 'index', name, 'png')
@@ -54,7 +55,6 @@ class Handler(object):
             img_save_path = save_path(file_name, url_obj.hostname or 'default', postfix=save_postfix)
             self.driver.save_screenshot(img_save_path)
             self.result.append({"name": self.url.name, "path": str(img_save_path)})
-
 
 class Default(Handler):
     name = 'default'
