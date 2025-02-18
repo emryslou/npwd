@@ -35,7 +35,19 @@ class Handler(object):
     def handler(self) -> Any:
         url_obj = parse_url(self.url.url)
         if hasattr(self.url, 'blocks'):
-            def snap_block(name: str, selector: str):
+            def snap_block(name: str, selector: str, depends: List | None = None):
+                if depends:
+                    for depend in depends:
+                        print('>>>>>>>>>>', depend)
+                        _depend_ele = WebDriverWait(self.driver, config.get('timeout', 60)).until(
+                            EC.visibility_of_element_located((depend["by"], depend["value"]))
+                        )
+                        for event in depend['events']:
+                            if 'params' in event and event['params']:
+                                getattr(_depend_ele, event['event'])(*event['params'])
+                            else:
+                                getattr(_depend_ele, event['event'])()
+
                 scf = WebDriverWait(self.driver, config.get('timeout', 60)).until(
                     EC.visibility_of_element_located((By.CSS_SELECTOR, selector))
                 )
@@ -44,7 +56,7 @@ class Handler(object):
                 time.sleep(0.5)
                 scf.screenshot(str(img_save_path_main))
                 return img_save_path_main
-            self.result.extend([ {"name": block['name'], 'path': str(snap_block(**block))} for block in self.url.blocks ])
+            self.result.extend([{"name": block['name'], 'path': str(snap_block(**block))} for block in self.url.blocks])
         
         if hasattr(self.url, 'snap_full_page') and self.url.snap_full_page:
             file_name = '{}_{}.{}'.format(

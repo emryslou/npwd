@@ -1,7 +1,8 @@
 # 0.0.6
-1. 优化命令行终端显示
-2. AI 可根据交易配置动态调整识别请求
-3. AI 可依据交易附带历史聊天记录
+1. coin glass 支持选择其他分类图表 [ Done ]
+2. 优化命令行终端显示
+3. AI 可根据交易配置动态调整识别请求
+4. AI 可依据交易附带历史聊天记录
 
 # 0.0.5
 1. 支持运行环境初始化
@@ -36,8 +37,26 @@
     "blocks": [ # 必填 ，可为空数组
         {
             "name": "btc", # 名称
-            "selector": "css 选择器"
+            "selector": "css 选择器",
+            "depends": [
+                {
+                    "by": "id", # 对应 from selenium.webdriver.common.by import By
+                    "value": "...",
+                    "events": [ # 元素需要出发的事件
+                        {
+                            "event": "....", # 事件方法
+                            "params": [ # 事件参数
+                                "param_1",
+                                "param_2",
+                                ...
+                                "param_xxx"
+                            ]
+                        }
+                    ]
+                }
+            ]
         }
-    ]
+    ],
+    "handler": "..." # 自定义处理器
 }
 ```

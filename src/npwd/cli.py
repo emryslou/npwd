@@ -70,12 +70,10 @@ def version():
     from . import app
     print('版本号 app: ', app.__version__)
 
+
 @cli.command()
 def dev():
-    from .core import config
-    config.init(config='config.yml')
-    print(config.dumps('yml'))
-
+    pass
 
 
 if __name__ == '__main__':
