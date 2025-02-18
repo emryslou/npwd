@@ -23,7 +23,7 @@ from .utils import (
     TaskManage,
 )
 
-__version__ = 'v0.0.5'
+__version__ = 'v0.0.6.{}'.format(time.strftime('%Y.%m.%d'))
 
 
 @handle_exception
