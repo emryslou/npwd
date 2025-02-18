@@ -2,7 +2,7 @@ from setuptools import setup, find_namespace_packages
 
 setup(
     name='npwd', # net-page-watch-dog
-    version='0.0.5.2025.02.18',
+    version='0.0.5',
     install_requires = [
         'importlib-metadata; python_version >= "3.10.16"',
         'loguru==0.7',

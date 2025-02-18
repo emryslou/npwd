@@ -36,11 +36,23 @@ def run(**kwargs):
     if 'source' not in kwargs and 'config' not in kwargs:
         raise click.UsageError('--source 或者 --config 必须至少提供一个')
     
-    from .core import config, load_handlers, log_path
+    from .core import config, load_handlers, log_path, data_path, bin_path, log_path, root_path, Path
     import sys
     from . import app
 
     config.init(**kwargs)
+
+    if not Path(config.get('runtime_path')).exists():
+        if not click.confirm('是否需要初始化环境运行环境?', default=True):
+            click.echo('好的，感谢您的使用，拜拜')
+            return
+        logger.info('初始化运行环境...')
+        Path(config.get('runtime_path')).mkdir(parents=True)
+        for path_func in [data_path, bin_path, log_path]:
+            path: Path = path_func()
+            if path.exists():
+                continue
+            path.mkdir(parents=True)
     
     logger.remove()
     log_level = str(config.get('log_level', 'INFO')).upper()
@@ -59,22 +71,10 @@ def version():
     print('版本号 app: ', app.__version__)
 
 @cli.command()
-@click.option('--runtime-path', type=click.Path(exists=True), default=None, help='需要初始化的路径, 默认: None')
-def runtime_init(runtime_path: str | None = None):
-    from pathlib import Path
-    from .core import data_path, bin_path, log_path, platform
-
-    for path_func in [data_path, bin_path, log_path]:
-        path: Path = path_func()
-        if path.exists():
-            continue
-        path.mkdir(parents=True)
-
-@cli.command()
 def dev():
     from .core import config
     config.init(config='config.yml')
-    print(config.all())
+    print(config.dumps('yml'))
 
 
 
