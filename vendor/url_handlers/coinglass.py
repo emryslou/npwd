@@ -32,7 +32,7 @@ class CoinGlass(Handler):
                 self.ai_client = Client(host=self.ai_config['host'])
                 content: str = self.ai_config['prompts']['buy']
                 if 'buy_map' in self.ai_config['prompts']:
-                    content = content.format_map(content)
+                    content = content.format_map(self.ai_config['prompts']['buy_map'])
                 req_params = {
                     'model':self.ai_config.get('model', 'minicpm-v:latest'),
                     'messages': [
@@ -46,6 +46,8 @@ class CoinGlass(Handler):
                 }
                 res = self.ai_client.chat(**req_params)
                 advise = []
+                print(f'Q: {content}')
+                print('A: ', end='')
                 for message in res:
                     print(message['message']['content'], end='')
                     advise.append(message['message']['content'])
