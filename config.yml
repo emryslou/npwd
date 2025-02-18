@@ -1,16 +1,4 @@
-# npwd
-网页看门狗
-
-# path
-bin # chrome driver bin path
-src # python srouce code
-vendor # custom net page handlers
-
-# config 文件说明
-1. 支持文件类型：yml ｜ yaml ｜ json
-2. Yml 文件示例:
-```yml
-# yml 文件
+# todo: next version
 version: 1 # 版本 固定写法
 config: # 版本，固定写法
   url_handlers: # 自定义的 URL 处理器，可配置多个
@@ -40,6 +28,3 @@ config: # 版本，固定写法
   timeout: 60 # 浏览器驱动超时时间
   with_progress: true # 是否显示进程
   proxy: '' # 代理，格式：IP/HOST:PORT
-```
-
-# 关于changelog 说明

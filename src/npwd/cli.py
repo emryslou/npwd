@@ -17,9 +17,9 @@ def clear_data(expire: int = 86400):
 
 
 @cli.command()
-@click.option('--config-path', type=click.Path(exists=True, file_okay=True), help='配置文件路径')
+@click.option('--config', type=click.Path(exists=True, file_okay=True), help='配置文件路径')
 @click.option('--driver-type', type=click.Choice(driver.driver_type_names()), default=driver.driver_default_type(), help=f'浏览器驱动类型, 默认:{driver.driver_default_type()}')
-@click.option('--source', type=click.Path(exists=True), default=None, help='需要处理文件或者目录', required=True)
+@click.option('--source', type=click.Path(exists=True), default=None, help='需要处理文件或者目录')
 @click.option('--source-watch', is_flag=True, type=click.BOOL, default=False, help='如果 source 目录，是否需要持续监控， 默认: True')
 @click.option('--headless', is_flag=True, type=click.BOOL, default=True, help='是否开启无头浏览器，默认开启: True')
 @click.option('--proxy', type=click.STRING, default='', help='代理地址, 格式: {ip or host}:{port}, 例如： 127.0.0.1:8080, proxy.host.com:9900')
@@ -33,6 +33,9 @@ def clear_data(expire: int = 86400):
 def run(**kwargs):
     """ 爬取指定目录或文件的 url
     """
+    if 'source' not in kwargs and 'config' not in kwargs:
+        raise click.UsageError('--source 或者 --config 必须至少提供一个')
+    
     from .core import config, load_handlers, log_path
     import sys
     from . import app
@@ -69,7 +72,10 @@ def runtime_init(runtime_path: str | None = None):
 
 @cli.command()
 def dev():
-    from .beta import live_progress
+    from .core import config
+    config.init(config='config.yml')
+    print(config.all())
+
 
 
 if __name__ == '__main__':

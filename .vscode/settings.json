@@ -9,5 +9,14 @@
             ]
         }
     },
-    "terminal.integrated.defaultProfile.windows": "my-pwsh"
+    "terminal.integrated.defaultProfile.windows": "my-pwsh",
+    "terminal.integrated.env.windows": {
+        "NPWD_ENV": "DEV"
+    },
+    "terminal.intergrated.env.linux": {
+        "NPWD_ENV": "DEV"
+    },
+    "terminal.intergrated.env.mac": {
+        "NPWD_ENV": "DEV"
+    }
 }

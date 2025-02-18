@@ -443,10 +443,9 @@ def stop_and_wait_threads(mq: ManageQueue, threads: List[threading.Thread], time
     [_t.join(timeout) for _t in threads]
 
 
-def start(monitor_path: str | None = None):
+def start():
     logger.info('欢迎使用，程序开始...')
-
-    monitor_path = monitor_path if monitor_path else config.get('source', '')
+    monitor_path = config.get('source', '')
     driver = driver_lib.init_driver(driver_lib.DriverType[config.get('driver_type')])
     quit_timeout = config.get('timeout', 60)  # 退出信号超时时间，秒
     with_progress = config.get('with_progress', False)

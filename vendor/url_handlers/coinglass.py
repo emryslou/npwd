@@ -1,7 +1,6 @@
 from selenium import webdriver
-from npwd.core import UrlInfo, Handler
+from npwd.core import UrlInfo, Handler, config
 from pathlib import Path
-from ollama import Client
 
 
 class CoinGlass(Handler):
@@ -10,34 +9,47 @@ class CoinGlass(Handler):
     def __init__(self, url: UrlInfo, driver: webdriver.Chrome):
         self.url = url
         self.driver = driver
-        self.ai_client = Client(host='192.168.1.21:11434')
+        self.ai_config = config.get('ai', {})
         super().__init__(url, driver)
     
     def handler(self):
         super().handler()
-        self.ai_anlysis()
+        if self.ai_config:
+            self.ai_anlysis()
 
     def ai_anlysis(self):
         for (idx, result) in  enumerate(self.result):
-            self.result[idx]['ai_advise'] = self.do_ai_analysis(result['path'])
+            self.result[idx]['ai_advise'] = self.do_analysis(result['path'])
     
-    def do_ai_analysis(self, img_path: Path) -> str:
-        res = self.ai_client.chat(
-            model='minicpm-v:latest',
-            messages=[
-                {
-                'role': 'user',
-                # 'content': '请帮我分析一下图片内容，并对我后面的买入或者卖出提供可以实际操作的建议，谢谢; 如果没有看到有用的图表信息，就直接告诉说无法给出合理建议',
-                # 'content': '我现在想卖入一笔交易，预期收益 >= 2%, 预期亏损 <= 1%, 请结合图中表的数据，给我一个切实可行的买入操作建议， 例如买入价位，卖出价位，预计持仓多久时间',
-                'content': '我想进行一笔快速交易，预期收益 >= 1%, 预期亏损 <= 0.5% 请结合图中表的数据，给我一个切实可行的买入操作建议，最好当天可以完成， 例如买入价位，卖出价位，是否可以达成预期',
-                'images': [img_path],
+    def do_analysis(self, img_path: Path) -> str:
+        if not self.ai_config or 'provider' not in self.ai_config:
+            return ''
+        match self.ai_config['provider']:
+            case 'ollama':
+                from ollama import Client
+                if not self.ai_config or 'host' not in self.ai_config:
+                    return ''
+                self.ai_client = Client(host=self.ai_config['host'])
+                content: str = self.ai_config['prompts']['buy']
+                if 'buy_map' in self.ai_config['prompts']:
+                    content = content.format_map(content)
+                req_params = {
+                    'model':self.ai_config.get('model', 'minicpm-v:latest'),
+                    'messages': [
+                        {
+                        'role': 'user',
+                        'content': content,
+                        'images': [img_path],
+                        }
+                    ],
+                    'stream': True
                 }
-            ],
-            stream=True
-        )
-        advise = ''
-        print('AI 说:')
-        for message in res:
-            print('\t', message['message']['content'].strip(), end='', flush=True)
-            advise = f"{advise}{message['message']['content']}"
-        return advise
+                res = self.ai_client.chat(**req_params)
+                advise = []
+                for message in res:
+                    print(message['message']['content'], end='')
+                    advise.append(message['message']['content'])
+                return ''.join(advise)
+            case _:
+                print('unsupported')
+                return ''
