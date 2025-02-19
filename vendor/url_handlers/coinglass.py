@@ -29,24 +29,22 @@ class CoinGlass(Handler):
                 from ollama import Client
                 if not self.ai_config or 'host' not in self.ai_config:
                     return ''
-                self.ai_client = Client(host=self.ai_config['host'])
+                ai_client = Client(host=self.ai_config['host'])
                 content: str = self.ai_config['prompts']['buy']
-                if 'buy_map' in self.ai_config['prompts']:
+                if 'buy_map' in self.ai_config['prompts'] and isinstance(self.ai_config['prompts']['buy_map'], dict):
                     content = content.format_map(self.ai_config['prompts']['buy_map'])
                 req_params = {
-                    'model':self.ai_config.get('model', 'minicpm-v:latest'),
-                    'messages': [
-                        {
+                    'model': self.ai_config.get('model', 'minicpm-v:latest'),
+                    'messages': [{
                         'role': 'user',
                         'content': content,
                         'images': [img_path],
-                        }
-                    ],
+                    }],
                     'stream': True
                 }
-                res = self.ai_client.chat(**req_params)
+                res = ai_client.chat(**req_params)
                 advise = []
-                print(f'Q: {content}')
+                print(f'Q: {content}', flush=True)
                 print('A: ', end='')
                 for message in res:
                     print(message['message']['content'], end='')

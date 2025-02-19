@@ -47,6 +47,7 @@ class Handler(object):
                             getattr(_depend_ele, event['event'])(*event['params'])
                         else:
                             getattr(_depend_ele, event['event'])()
+                    time.sleep(3)
 
             def snap_block(name: str, selector: str, depends: List | None = None):
                 block_depends(depends)

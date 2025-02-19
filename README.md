@@ -2,9 +2,11 @@
 网页看门狗
 
 # path
-bin # chrome driver bin path
-src # python srouce code
-vendor # custom net page handlers
+```
+bin # 浏览器驱动执行文件目录
+src # 源码路径
+vendor # 自定义网页处理器
+```
 
 # config 文件说明
 1. 支持文件类型：yml ｜ yaml ｜ json
@@ -40,6 +42,45 @@ config: # 版本，固定写法
   timeout: 60 # 浏览器驱动超时时间
   with_progress: true # 是否显示进程
   proxy: '' # 代理，格式：IP/HOST:PORT
+```
+
+# 3. 网页内容配置说明
+- 文件格式为
+```
+# 每行为一个完整的 JSON 格式数据
+{ ... }
+{ ... }
+```
+- 每行JSON包含字段说明
+```json5
+{
+    "name": "说明性文字", // 必填
+    "url": "网页URL地址", // 必填
+    "blocks": [ // 必填 ，可为空数组
+        {
+            "name": "btc", // 名称
+            "selector": "css 选择器", // 元素选择器
+            "depends": [ // 可选，依赖元素
+                {
+                    "by": "id", // 对应 from selenium.webdriver.common.by import By
+                    "value": "...", // 元素选择器
+                    "events": [ // 元素需要触发的事件
+                        {
+                            "event": "....", // 事件方法
+                            "params": [ // 事件参数
+                                "param_1",
+                                "param_2",
+                                ...
+                                "param_xxx"
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "handler": "..." // 可选， 自定义处理器
+}
 ```
 
 # 关于changelog 说明

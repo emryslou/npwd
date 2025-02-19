@@ -72,6 +72,13 @@ def version():
 
 
 @cli.command()
+def dump_config():
+    """导出配置到指定文件"""
+    from .core import config
+    pass
+
+
+@cli.command()
 def dev():
     pass
 

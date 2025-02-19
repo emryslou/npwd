@@ -1,9 +1,9 @@
 from setuptools import setup, find_namespace_packages
 
 setup(
-    name='npwd', # net-page-watch-dog
-    version='0.0.6-dev',
-    install_requires = [
+    name='npwd',  # net-page-watch-dog
+    version='0.0.6.2025.02.19',
+    install_requires=[
         'importlib-metadata; python_version >= "3.10.16"',
         'loguru==0.7',
         'fake-useragent==2.0.3',
@@ -16,7 +16,7 @@ setup(
         'requests==2.32.3',
         'ollama==0.4.7',
 
-        'PyYAML==6.0.2' # yaml
+        'PyYAML==6.0.2',  # yaml
     ],
     package_dir={"": "src"},
     packages=find_namespace_packages(
