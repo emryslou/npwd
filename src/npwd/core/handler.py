@@ -35,24 +35,26 @@ class Handler(object):
     def handler(self) -> Any:
         url_obj = parse_url(self.url.url)
         if hasattr(self.url, 'blocks'):
-            def snap_block(name: str, selector: str, depends: List | None = None):
-                if depends:
-                    for depend in depends:
-                        print('>>>>>>>>>>', depend)
-                        _depend_ele = WebDriverWait(self.driver, config.get('timeout', 60)).until(
-                            EC.visibility_of_element_located((depend["by"], depend["value"]))
-                        )
-                        for event in depend['events']:
-                            if 'params' in event and event['params']:
-                                getattr(_depend_ele, event['event'])(*event['params'])
-                            else:
-                                getattr(_depend_ele, event['event'])()
+            def block_depends(depends: List | None = None):
+                if not depends:
+                    return
+                for depend in depends:
+                    _depend_ele = WebDriverWait(self.driver, config.get('timeout', 60)).until(
+                        EC.visibility_of_element_located((depend["by"], depend["value"]))
+                    )
+                    for event in depend['events']:
+                        if 'params' in event and event['params']:
+                            getattr(_depend_ele, event['event'])(*event['params'])
+                        else:
+                            getattr(_depend_ele, event['event'])()
 
+            def snap_block(name: str, selector: str, depends: List | None = None):
+                block_depends(depends)
                 scf = WebDriverWait(self.driver, config.get('timeout', 60)).until(
                     EC.visibility_of_element_located((By.CSS_SELECTOR, selector))
                 )
-                file_name = '{}_{}.{}.{}'.format('block', url_obj.path.replace('/', '_') if url_obj.path else 'index', name, 'png')
-                img_save_path_main = save_path(file_name, url_obj.hostname or 'default', postfix=save_postfix)
+                _file_name = '{}_{}.{}.{}'.format('block', url_obj.path.replace('/', '_') if url_obj.path else 'index', name, 'png')
+                img_save_path_main = save_path(_file_name, url_obj.hostname or 'default', postfix=save_postfix)
                 time.sleep(0.5)
                 scf.screenshot(str(img_save_path_main))
                 return img_save_path_main
@@ -67,6 +69,7 @@ class Handler(object):
             img_save_path = save_path(file_name, url_obj.hostname or 'default', postfix=save_postfix)
             self.driver.save_screenshot(img_save_path)
             self.result.append({"name": self.url.name, "path": str(img_save_path)})
+
 
 class Default(Handler):
     name = 'default'
