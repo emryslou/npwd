@@ -2,22 +2,6 @@ from typing import Dict, Any
 from pathlib import Path
 from os import getcwd, environ, path as os_path
 
-"""
-
-@click.option('--config-path', type=click.Path(exists=True, file_okay=True), help='配置文件路径')
-@click.option('--driver-type', type=click.Choice(driver.driver_type_names()), default=driver.driver_default_type(), help=f'浏览器驱动类型, 默认:{driver.driver_default_type()}')
-@click.option('--source', type=click.Path(exists=True), default=None, help='需要处理文件或者目录', required=True)
-@click.option('--source-watch', is_flag=True, type=click.BOOL, default=False, help='如果 source 目录，是否需要持续监控， 默认: True')
-@click.option('--headless', is_flag=True, type=click.BOOL, default=True, help='是否开启无头浏览器，默认开启: True')
-@click.option('--proxy', type=click.STRING, default='', help='代理地址, 格式: {ip or host}:{port}, 例如： 127.0.0.1:8080, proxy.host.com:9900')
-@click.option('--timeout', type=click.IntRange(1, 3600), default=60, help='超时时间, 单位: 秒, 默认: 60')
-@click.option('--tab-count', type=click.IntRange(1, 15), default=2, help='默认打开 标签页个数, 默认: 2')
-@click.option('--scroll-window-size', is_flag=True, type=click.BOOL, default=False, help='是否滚动窗口, 默认: False')
-@click.option('--with-progress', is_flag=True, type=click.BOOL, default=False, help='是否显示进度, 默认: False')
-@click.option('--idle-task', is_flag=True, type=click.BOOL, default=False, help='是否启动空闲超时任务, 仅在 source 为目录时有效')
-@click.option('--idle-timeout', type=click.IntRange(10, 86400), default=600, help='队列空闲超过多少秒后启动，默认: 600')
-@click.option('--log-level', type=click.Choice(['TRACE', 'DEBUG', 'INFO', 'SUCCESS', 'WARNING', 'ERROR', 'CRITICAL'], case_sensitive=False), default='INFO', help='日志显示级别, 默认: INFO')
-"""
 _config_default: Dict = {
     'runtime_path':  str(Path(os_path.expandvars('%AppData%')).joinpath('npwd')) if environ.get('NPWD_ENV', 'PROD').upper() == 'PROD' else getcwd(),
     'driver_type': 'Chrome',
@@ -53,7 +37,12 @@ _config_default: Dict = {
 
 _config: Dict = _config_default.copy()
 
+
 def init(**kwargs):
+    """初始化 config
+    Args:
+        ...
+    """
     if 'config' in kwargs and kwargs['config']:
         _cfg = {}
         _config_path = Path(kwargs['config'])
@@ -86,13 +75,23 @@ def init(**kwargs):
     if kwargs:
         _config.update(**kwargs)
 
+
 def _load_python_yaml(_path: str | Path) -> dict:
+    """从 yaml 文件 加载配置
+    Args:
+        _path: str | Path  # Yaml 文件 路径
+    """
     with open(_path, encoding='utf-8') as _cfg:
         import yaml
         _cfg = yaml.load(_cfg, Loader=yaml.Loader)
         return _cfg
 
+
 def _load_python_json(_path: str | Path) -> dict:
+    """从 json 文件 加载配置
+    Args:
+        _path: str | Path  # json 文件 路径
+    """
     with open(_path, encoding='utf-8') as _cfg:
         import json
         _cfg = json.load(_cfg)
@@ -100,7 +99,7 @@ def _load_python_json(_path: str | Path) -> dict:
 
 
 def get(key: str, default=None) -> Any:
-
+    """读取配置"""
     result = _config.get(key, default)
     if not result:
         keys = key.split('.')
@@ -113,7 +112,14 @@ def get(key: str, default=None) -> Any:
     else:
         return result
 
+
 def set(key: str, value: Any):
+    """设置配置
+    Args:
+        key: str  # 支持 some or foo.some
+        value: Any  # 保存值
+    """
+
     if key in _config:
         _config[key] = value
     elif key.count('.'):
@@ -126,12 +132,19 @@ def set(key: str, value: Any):
         
         _config[p_key] = __make_sub_config(sub_keys, value)
     else:
-       _config[key] = value
+        _config[key] = value
+
 
 def all() -> Dict:
+    """读取所有配置"""
     return _config
 
+
 def dumps(dump_format: str) -> str:
+    """序列化配置
+    Args:
+        dump_format: str, one of 'json' or 'yaml' or 'yml'
+    """
     _dump_data = {
         'version': '1',
         'config': all(),
@@ -147,7 +160,13 @@ def dumps(dump_format: str) -> str:
         case _:
             raise BaseException('Error: Unsupported Format {}'.format(dump_format))
 
+
 def dump(file_path: str | Path, dump_format: str) -> None:
+    """配置文件输出到指定文件
+    Args:
+        file_path: str | Path  # 要输出的文件
+        dump_format: str, one of 'json', 'yml' or 'yaml' # 输出格式
+    """
     _dump_data = {
         'version': '1',
         'config': all(),
@@ -164,5 +183,6 @@ def dump(file_path: str | Path, dump_format: str) -> None:
                 yaml.dump(_dump_data, stream=f, default_flow_style=False, allow_unicode=True, sort_keys=False)
         case _:
             raise BaseException('Error: Unsupported Format {}'.format(dump_format))
+
 
 __import__ = ['init', 'get', 'all', 'set', 'dumps', 'dump']

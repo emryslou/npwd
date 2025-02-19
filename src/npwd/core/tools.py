@@ -14,8 +14,7 @@ def func_name(depth: int = 1):
 
 @lru_cache(maxsize=512)
 def root_path() -> Path:
-    custom_root_path = config.get('runtime_path', os.getcwd())
-    return Path(custom_root_path)
+    return Path(config.get('runtime_path', os.getcwd()))
 
 
 def data_path() -> Path:
@@ -52,14 +51,14 @@ def save_path(
 
     _paths = [file_path, name] if file_path else [name]
 
-    def save_root_path(file_type: str) -> Path:
-        match file_type:
+    def save_root_path(_file_type: str) -> Path:
+        match _file_type:
             case 'img':
                 return img_path()
             case 'txt':
                 return txt_path()
             case _:
-                return data_path().joinpath(str(file_type))
+                return data_path().joinpath(str(_file_type))
 
     _save_path = save_root_path(file_type).joinpath(*_paths)
     if not _save_path.parent.exists():
@@ -68,7 +67,10 @@ def save_path(
 
 
 def bin_path(sub_path: Optional[str] = None) -> Path:
-    return root_path().joinpath('bin').joinpath(sub_path) if sub_path else  root_path().joinpath('bin')
+    _path = root_path().joinpath('bin')
+    if sub_path:
+        _path = _path.joinpath(sub_path)
+    return _path
 
 
 def load_handlers(handler_config: List[str]):
