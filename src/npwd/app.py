@@ -449,7 +449,7 @@ def start():
     driver = driver_lib.init_driver(driver_lib.DriverType[config.get('driver_type')])
     quit_timeout = config.get('timeout', 60)  # 退出信号超时时间，秒
     with_progress = config.get('with_progress', False)
-    mq_kwargs = {'file': 2, 'url': 10,}
+    mq_kwargs = {'file': 2, 'url': 10}
     if with_progress:
         mq_kwargs['progress'] = 300
     
@@ -474,7 +474,6 @@ def start():
         for cfg_key in ['source_watch', 'idle_task']:
             if config.get(cfg_key, False):
                 return True
-        
         return False
 
     [_t.start() for _t in threads]
@@ -500,10 +499,14 @@ def start():
             send_progress_msg(mq, message=f'{monitor_path} 内容全部处理完成')
         
         if infinity_loop():
-            while mq.running():
-                time.sleep(10)
+            while True:
+                try:
+                    driver.title
+                    time.sleep(10)
+                except:
+                    break
         
-        mq.join('url') # 等待 URL 处理任务完成
+        mq.join('url')  # 等待 URL 处理任务完成
     except KeyboardInterrupt:
         logger.info('感谢使用，程序预计在 {} 秒内退出', quit_timeout)
         send_progress_msg(mq, message=f'谢谢使用，正在做收尾工作，请稍等')

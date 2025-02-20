@@ -13,11 +13,13 @@ class DriverType(Enum):
     Chrome = 2
     Safari = 3
 
+
 class PlatformType(Enum):
     UnknownPlatform = 0
     Windows = 1
     Linux = 2
     MacOS = 3
+
 
 __platform_default_driver: dict = {
     str(PlatformType.Windows.name): str(DriverType.Edge.name),
@@ -29,12 +31,13 @@ __platform_default_driver: dict = {
 def driver_type_names() -> List[str]:
     return DriverType.__dict__['_member_names_']
 
+
 def driver_default_type() -> str:
-    _plaform = platform()
     try:
-        return __platform_default_driver[_plaform]
+        return __platform_default_driver[platform()]
     except KeyError:
         return 'Unknown'
+
 
 def platform():
     check_prefix = {
@@ -50,7 +53,12 @@ def platform():
 
 
 def init_driver(driver_type: DriverType):
-
+    """初始化一个 浏览器 对象
+    Args:
+        driver_type: DriverType
+    Return:
+        browser driver object
+    """
     match driver_type:
         case DriverType.Edge:
             driver = init_edge()
@@ -69,6 +77,8 @@ def init_driver(driver_type: DriverType):
 
 
 def init_edge_options():
+    """初始化一个 edge 浏览器配置对象"""
+
     _options = webdriver.EdgeOptions()
     _options.add_argument('User-Agent={}'.format(UserAgent(os=platform()).random))  # 设置 UA
     _options.add_argument('log-level=3')  # 日志级别
@@ -86,6 +96,7 @@ def init_edge_options():
 
 
 def init_edge():
+    """初始化一个 edge 浏览器对象"""
     options = init_edge_options()
     driver = webdriver.Edge(options=options)
     

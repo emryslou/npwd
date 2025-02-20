@@ -6,7 +6,6 @@ from typing import Type, Any
 from urllib3.util import parse_url
 import time
 
-from . import config
 from .tools import *
 from .url_info import UrlInfo
 
